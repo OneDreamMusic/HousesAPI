@@ -1,0 +1,119 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: houses-api
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:Scan"
+          Resource:
+            - { "Fn::GetAtt": ["HousesTable", "Arn"] }
+
+functions:
+  createHouse:
+    handler: src/handlers.createHouse
+    events:
+      - httpApi:
+          path: /house
+          method: post
+          description: Create object
+          bodyType: HouseSchemaRequest
+          responseData:
+            201:
+              bodyType: HouseSchemaResponse
+              description: Resource has been created
+            400:
+              description: Bad Request
+  getHouse:
+    handler: src/handlers.getHouse
+    events:
+      - httpApi:
+          path: /house/{id}
+          method: get
+          description: Return object by id
+          responseData:
+            200:
+              description: The resource has been fetched
+              bodyType: HouseSchemaResponse
+            404:
+              description: Not found
+  updateHouse:
+    handler: src/handlers.updateHouse
+    events:
+      - httpApi:
+          path: /house/{id}
+          method: put
+          description: Update object
+          bodyType: HouseSchemaRequest
+          responseData:
+            200:
+              description: The resource has been fetched
+              bodyType: HouseSchemaResponse
+            400:
+              description: Bad Request
+  deleteHouse:
+    handler: src/handlers.deleteHouse
+    events:
+      - httpApi:
+          path: /house/{id}
+          method: delete
+          description: Delete object by id
+          responseData:
+            204:
+              description: Successfully deleted
+            404:
+              description: Not found
+  listHouse:
+    handler: src/handlers.listHouse
+    events:
+      - httpApi:
+          path: /houses
+          method: get
+          description: List objects
+          responseData:
+            200:
+              description: Return all created object
+              bodyType: HouseSchemaListResponse
+
+plugins:
+  - serverless-auto-swagger
+  - serverless-offline
+  - serverless-plugin-typescript
+
+resources:
+  Resources:
+    HousesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: HousesTable
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        AttributeDefinitions:
+          - AttributeName: houseID
+            AttributeType: S
+        KeySchema:
+          - AttributeName: houseID
+            KeyType: HASH
